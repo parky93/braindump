@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🧠 Brain Dump</title>
+
+  <!-- PWA / iPhone home screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Brain Dump">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d0d1a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="Brain Dump">
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --surface: #13132b;
+      --card: #1a1a35;
+      --text: #e8eaf6;
+      --muted: #7986cb;
+      --border: rgba(255,255,255,0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-top: 170px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 15%, rgba(99,102,241,0.15) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 85%, rgba(236,72,153,0.1) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(16,185,129,0.05) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      padding: 1.25rem 1rem 0.25rem;
+      position: relative;
+    }
+
+    .logo {
+      font-size: clamp(2.2rem, 7vw, 3.8rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #818cf8 0%, #f472b6 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem 1rem 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: default;
+      user-select: none;
+    }
+
+    .stat-pill b { color: var(--text); }
+
+    .clear-btn {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 100px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8rem;
+      color: #f87171;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .clear-btn:hover { background: rgba(239,68,68,0.22); }
+
+    /* ── FILTER TABS ── */
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    .filter-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.82rem;
+      padding: 0.45rem 1rem;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .filter-btn.active {
+      background: rgba(129,140,248,0.18);
+      border-color: rgba(129,140,248,0.5);
+      color: #c7d2fe;
+    }
+
+    /* ── CARDS GRID ── */
+    .grid {
+      padding: 0.5rem 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 0.85rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── TASK CARD ── */
+    @keyframes slideIn {
+      from { transform: translateY(16px) scale(0.97); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      animation: slideIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+      transition: transform 0.15s, opacity 0.3s;
+    }
+
+    .card.done-card {
+      opacity: 0.38;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.9rem;
+      gap: 0.5rem;
+    }
+
+    .cat-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      border-radius: 100px;
+      padding: 0.22rem 0.7rem;
+    }
+
+    .urg-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      border-radius: 100px;
+      padding: 0.22rem 0.6rem;
+      white-space: nowrap;
+    }
+
+    .urg-urgent { background: rgba(239,68,68,0.18); color: #fca5a5; }
+    .urg-high   { background: rgba(249,115,22,0.18); color: #fdba74; }
+    .urg-medium { background: rgba(234,179,8,0.18);  color: #fde047; }
+    .urg-low    { background: rgba(34,197,94,0.18);  color: #86efac; }
+
+    .card-body {
+      padding: 0.5rem 1rem 0.75rem;
+    }
+
+    .task-text {
+      font-size: 1rem;
+      line-height: 1.55;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .task-text:active { opacity: 0.7; }
+
+    .task-text.striked {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    /* time ago */
+    .time-ago {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.2);
+      margin-top: 0.2rem;
+    }
+
+    /* ── SUBSTEPS ── */
+    .substeps {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.65rem;
+    }
+
+    .substep {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .s-check {
+      flex-shrink: 0;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      margin-top: 2px;
+      transition: all 0.18s;
+    }
+
+    .substep.checked .s-check {
+      background: #34d399;
+      border-color: #34d399;
+      color: #022c22;
+    }
+
+    .substep.checked .s-label {
+      text-decoration: line-through;
+      color: rgba(255,255,255,0.22);
+    }
+
+    .s-label {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.4;
+      transition: color 0.18s;
+    }
+
+    /* ── CARD FOOTER ── */
+    .card-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 0.75rem 0.6rem;
+    }
+
+    .del-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.15);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .del-btn:hover { color: #f87171; background: rgba(239,68,68,0.1); }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--muted);
+    }
+
+    .empty .big { font-size: 3.5rem; display: block; margin-bottom: 0.75rem; }
+    .empty h2 { font-size: 1.4rem; color: var(--text); margin-bottom: 0.4rem; }
+    .empty p { font-size: 0.9rem; }
+
+    /* ── DUMP ZONE (top sticky) ── */
+    .dump-zone {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(13,13,26,0.96);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: calc(0.85rem + env(safe-area-inset-top)) 1rem 0.85rem;
+      z-index: 200;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-end;
+    }
+
+    .dump-input {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      resize: none;
+      min-height: 52px;
+      max-height: 140px;
+      font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+      line-height: 1.4;
+    }
+
+    .dump-input:focus {
+      outline: none;
+      border-color: rgba(129,140,248,0.6);
+      background: rgba(255,255,255,0.09);
+    }
+
+    .dump-input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .dump-btn {
+      flex-shrink: 0;
+      height: 52px;
+      padding: 0 1.25rem;
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      border: none;
+      border-radius: 18px;
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.03em;
+      transition: transform 0.1s, opacity 0.2s, filter 0.2s;
+      white-space: nowrap;
+    }
+
+    .dump-btn:active { transform: scale(0.94); }
+    .dump-btn:disabled { opacity: 0.6; cursor: default; }
+
+    .hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.18);
+      margin-top: 0.4rem;
+    }
+
+    /* ── CONFETTI ── */
+    @keyframes fly {
+      0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translateY(-90px) rotate(540deg) scale(0.5); opacity: 0; }
+    }
+
+    .confetti {
+      position: fixed;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: fly 0.9s ease-out forwards;
+    }
+
+    /* ── PROCESSING SHIMMER ── */
+    @keyframes shimmer {
+      0%,100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .processing-msg {
+      text-align: center;
+      padding: 2rem;
+      font-size: 1rem;
+      color: #818cf8;
+      animation: shimmer 0.7s ease-in-out infinite;
+      grid-column: 1/-1;
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠 Brain Dump</div>
+  <p class="tagline">Throw it all in — we'll untangle it.</p>
+</header>
+
+<div class="stats-bar" id="statsBar"></div>
+<div class="filter-bar" id="filterBar"></div>
+<div class="grid" id="grid"></div>
+
+<div class="dump-zone">
+  <div class="input-row">
+    <textarea
+      id="dumpInput"
+      class="dump-input"
+      rows="1"
+      placeholder="What's swirling in your head right now?"
+    ></textarea>
+    <button id="dumpBtn" class="dump-btn">⚡ DUMP</button>
+  </div>
+  <p class="hint">Each line = one task · Tap "Add to Home Screen" to install</p>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CATEGORIES
+// ─────────────────────────────────────────────
+const CATS = {
+  work: {
+    name: 'Work', emoji: '💼',
+    color: '#818cf8', bg: 'rgba(129,140,248,0.14)',
+    keys: ['meeting','email','deadline','project','client','boss','work','office',
+           'call','report','presentation','team','manager','colleague','slack',
+           'zoom','hire','interview','proposal','invoice','contract','reply','send']
+  },
+  health: {
+    name: 'Health', emoji: '💪',
+    color: '#34d399', bg: 'rgba(52,211,153,0.14)',
+    keys: ['exercise','gym','run','walk','doctor','appointment','medication',
+           'sleep','eat','diet','water','health','workout','therapy','dentist',
+           'vitamin','meditate','yoga','stretch','physio','mental','anxiety','stress']
+  },
+  finance: {
+    name: 'Finance', emoji: '💰',
+    color: '#fbbf24', bg: 'rgba(251,191,36,0.14)',
+    keys: ['money','pay','bill','bank','budget','invest','tax','insurance',
+           'rent','mortgage','loan','credit','expense','salary','finance',
+           'account','transfer','subscription','cancel','owe','refund']
+  },
+  social: {
+    name: 'Social', emoji: '🫂',
+    color: '#f472b6', bg: 'rgba(244,114,182,0.14)',
+    keys: ['friend','family','mum','dad','mom','partner','birthday','party',
+           'dinner','lunch','coffee','visit','call','text','message','relationship',
+           'date','anniversary','wedding','baby','catch up','reach out']
+  },
+  learning: {
+    name: 'Learning', emoji: '📚',
+    color: '#60a5fa', bg: 'rgba(96,165,250,0.14)',
+    keys: ['learn','read','book','course','study','research','practice','skill',
+           'tutorial','watch','listen','podcast','article','class','lesson','language']
+  },
+  creative: {
+    name: 'Creative', emoji: '🎨',
+    color: '#c084fc', bg: 'rgba(192,132,252,0.14)',
+    keys: ['write','draw','design','create','art','music','play','build','make',
+           'craft','photo','video','blog','paint','sing','compose','film','edit']
+  },
+  home: {
+    name: 'Home', emoji: '🏠',
+    color: '#fb923c', bg: 'rgba(251,146,60,0.14)',
+    keys: ['clean','tidy','organise','organize','fix','repair','buy','shop',
+           'grocery','groceries','laundry','dishes','house','home','garden',
+           'plant','furniture','move','pack','unpack','declutter']
+  },
+  ideas: {
+    name: 'Ideas', emoji: '💡',
+    color: '#facc15', bg: 'rgba(250,204,21,0.14)',
+    keys: ['idea','concept','what if','maybe','could','imagine','think about',
+           'explore','consider','brainstorm','potential','possibility','what about']
+  }
+};
+
+// ─────────────────────────────────────────────
+// URGENCY
+// ─────────────────────────────────────────────
+const URGENCY = [
+  {
+    id: 'urgent', label: '🔴 URGENT', cls: 'urg-urgent', order: 0,
+    keys: ['asap','urgent','today','due','deadline','overdue','immediately',
+           'right now','critical','emergency','tonight','!!']
+  },
+  {
+    id: 'high', label: '🟠 HIGH', cls: 'urg-high', order: 1,
+    keys: ['soon','this week','tomorrow','important','priority','must','need to',
+           'have to','crucial','by friday','by monday','don\'t forget','dont forget']
+  },
+  {
+    id: 'low', label: '🟢 LOW', cls: 'urg-low', order: 3,
+    keys: ['someday','eventually','when i can','one day','later','whenever',
+           'no rush','might','perhaps','could maybe','low priority']
+  },
+  {
+    id: 'medium', label: '🟡 MEDIUM', cls: 'urg-medium', order: 2,
+    keys: []   // default
+  }
+];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let tasks = [];
+try { tasks = JSON.parse(localStorage.getItem('bd2-tasks') || '[]'); } catch(e) {}
+let filter = 'all';
+
+// ─────────────────────────────────────────────
+// PROCESSING LOGIC
+// ─────────────────────────────────────────────
+function detectCat(text) {
+  const low = text.toLowerCase();
+  let best = 'ideas', bestN = 0;
+  for (const [k, cat] of Object.entries(CATS)) {
+    const n = cat.keys.filter(kw => low.includes(kw)).length;
+    if (n > bestN) { bestN = n; best = k; }
+  }
+  return best;
+}
+
+function detectUrgency(text) {
+  const low = text.toLowerCase();
+  for (const u of URGENCY) {
+    if (u.keys.length && u.keys.some(kw => low.includes(kw))) return u.id;
+  }
+  return 'medium';
+}
+
+function extractSteps(text) {
+  // 1) numbered list: "1. foo 2. bar" or "1) foo\n2) bar"
+  let m = text.match(/\d+[.)]\s*([^0-9.)\n]+)/g);
+  if (m && m.length >= 2) return m.map(s => s.replace(/^\d+[.)]\s*/, '').trim());
+
+  // 2) bullets: "- foo\n- bar" or "• foo"
+  m = text.match(/^[\-\*•]\s*(.+)/gm);
+  if (m && m.length >= 2) return m.map(s => s.replace(/^[\-\*•]\s*/, '').trim());
+
+  // 3) colon intro: "Do the thing: step1, step2, step3"
+  const colonMatch = text.match(/^[^:]+:\s*(.+)$/s);
+  if (colonMatch) {
+    const after = colonMatch[1];
+    const parts = after.split(/,\s*(?:and\s+)?|\s+and\s+/).map(p => p.trim()).filter(p => p.length > 2);
+    if (parts.length >= 2) return parts;
+  }
+
+  // 4) comma + "and" list with 3+ items
+  const parts = text.split(/,\s*(?:and\s+)?|\s+and\s+/).map(p => p.trim()).filter(p => p.length > 3);
+  if (parts.length >= 3) return parts;
+
+  // 5) sequential keywords
+  const seqParts = text.split(/\b(?:first[,\s]+|then\s+|next[,\s]+|after that[,\s]+|finally[,\s]+|lastly[,\s]+)/i);
+  const steps = seqParts.map(s => s.trim()).filter(s => s.length > 5);
+  if (steps.length >= 2) return steps;
+
+  return [];
+}
+
+function processText(raw) {
+  const lines = raw.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+  return lines.map(line => ({
+    id: Date.now() + Math.random(),
+    text: line,
+    cat: detectCat(line),
+    urgency: detectUrgency(line),
+    steps: extractSteps(line).map(s => ({ text: s, done: false })),
+    done: false,
+    ts: Date.now()
+  }));
+}
+
+// ─────────────────────────────────────────────
+// PERSIST
+// ─────────────────────────────────────────────
+function save() {
+  localStorage.setItem('bd2-tasks', JSON.stringify(tasks));
+}
+
+// ─────────────────────────────────────────────
+// TIME AGO
+// ─────────────────────────────────────────────
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function renderStats() {
+  const active = tasks.filter(t => !t.done).length;
+  const done   = tasks.filter(t => t.done).length;
+  const urg    = tasks.filter(t => t.urgency === 'urgent' && !t.done).length;
+
+  document.getElementById('statsBar').innerHTML = [
+    active ? `<div class="stat-pill">📋 <b>${active}</b> active</div>` : '',
+    urg    ? `<div class="stat-pill">🔴 <b>${urg}</b> urgent</div>` : '',
+    done   ? `<div class="stat-pill">✅ <b>${done}</b> done</div>` : '',
+    done   ? `<button class="clear-btn" onclick="clearDone()">Clear done</button>` : ''
+  ].join('');
+}
+
+function renderFilters() {
+  const cats = [...new Set(tasks.map(t => t.cat))];
+  const btns = [
+    btn('all', 'All'),
+    btn('urgent', '🔴 Urgent'),
+    ...cats.map(c => btn(c, CATS[c].emoji + ' ' + CATS[c].name))
+  ].join('');
+  document.getElementById('filterBar').innerHTML = btns;
+}
+
+function btn(id, label) {
+  return `<button class="filter-btn ${filter === id ? 'active' : ''}" onclick="setFilter('${id}')">${label}</button>`;
+}
+
+function renderCards() {
+  const grid = document.getElementById('grid');
+
+  let list = [...tasks];
+
+  if (filter === 'urgent') {
+    list = list.filter(t => t.urgency === 'urgent');
+  } else if (filter !== 'all') {
+    list = list.filter(t => t.cat === filter);
+  }
+
+  const urgOrder = { urgent:0, high:1, medium:2, low:3 };
+  list.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const ud = urgOrder[a.urgency] - urgOrder[b.urgency];
+    if (ud !== 0) return ud;
+    return b.ts - a.ts;
+  });
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty">
+      <span class="big">${filter === 'all' ? '🧠' : '🎉'}</span>
+      <h2>${filter === 'all' ? 'Your mind is clear' : 'Nothing here'}</h2>
+      <p>${filter === 'all' ? 'Type a thought above and hit DUMP!' : 'No tasks in this category.'}</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(t => cardHTML(t)).join('');
+}
+
+function cardHTML(t) {
+  const cat  = CATS[t.cat];
+  const urg  = URGENCY.find(u => u.id === t.urgency);
+  const done = t.done;
+
+  const stepsHTML = t.steps.length ? `
+    <div class="substeps">
+      ${t.steps.map((s, i) => `
+        <div class="substep ${s.done ? 'checked' : ''}" onclick="toggleStep('${t.id}',${i})">
+          <div class="s-check">${s.done ? '✓' : ''}</div>
+          <span class="s-label">${esc(s.text)}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `
+  <div class="card ${done ? 'done-card' : ''}" id="c-${t.id}">
+    <div class="card-header" style="background:${cat.bg}">
+      <div class="cat-badge" style="background:${cat.bg};color:${cat.color}">
+        ${cat.emoji} ${cat.name}
+      </div>
+      <div class="urg-badge ${urg.cls}">${urg.label}</div>
+    </div>
+    <div class="card-body">
+      <div class="task-text ${done ? 'striked' : ''}" onclick="toggleDone('${t.id}',event)">
+        ${esc(t.text)}
+      </div>
+      <div class="time-ago">${timeAgo(t.ts)}</div>
+      ${stepsHTML}
+    </div>
+    <div class="card-footer">
+      <button class="del-btn" onclick="deleteTask('${t.id}')">🗑 delete</button>
+    </div>
+  </div>`;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderAll() {
+  renderStats();
+  renderFilters();
+  renderCards();
+}
+
+// ─────────────────────────────────────────────
+// ACTIONS
+// ─────────────────────────────────────────────
+function setFilter(f) {
+  filter = f;
+  renderAll();
+}
+
+function toggleDone(id, event) {
+  const t = tasks.find(t => t.id == id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) confetti(event);
+  save();
+  renderAll();
+}
+
+function toggleStep(taskId, i) {
+  const t = tasks.find(t => t.id == taskId);
+  if (!t) return;
+  t.steps[i].done = !t.steps[i].done;
+  // auto-complete if all steps done
+  if (t.steps.every(s => s.done)) {
+    t.done = true;
+    confetti();
+  }
+  save();
+  renderAll();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id != id);
+  save();
+  renderAll();
+}
+
+function clearDone() {
+  tasks = tasks.filter(t => !t.done);
+  save();
+  renderAll();
+}
+
+function confetti(event) {
+  const colors = ['#818cf8','#f472b6','#34d399','#fbbf24','#60a5fa','#fb923c','#c084fc'];
+  const cx = event?.clientX ?? window.innerWidth / 2;
+  const cy = event?.clientY ?? window.innerHeight * 0.6;
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.cssText = `
+      left:${cx + (Math.random()-0.5)*50}px;
+      top:${cy}px;
+      background:${colors[i % colors.length]};
+      border-radius:${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-delay:${Math.random()*0.25}s;
+      animation-duration:${0.7 + Math.random()*0.5}s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+}
+
+// ─────────────────────────────────────────────
+// INPUT
+// ─────────────────────────────────────────────
+const input = document.getElementById('dumpInput');
+const dumpBtn = document.getElementById('dumpBtn');
+
+dumpBtn.addEventListener('click', handleDump);
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+
+function handleDump() {
+  const raw = input.value.trim();
+  if (!raw) {
+    input.style.animation = 'none';
+    input.style.borderColor = '#f87171';
+    setTimeout(() => { input.style.borderColor = ''; }, 800);
+    return;
+  }
+
+  dumpBtn.textContent = '⏳ Sorting…';
+  dumpBtn.disabled = true;
+
+  setTimeout(() => {
+    const newTasks = processText(raw);
+    tasks = [...newTasks, ...tasks];
+    save();
+
+    input.value = '';
+    input.style.height = 'auto';
+    dumpBtn.textContent = '⚡ DUMP';
+    dumpBtn.disabled = false;
+
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 280);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+renderAll();
+
+// refresh time-ago labels every minute
+setInterval(renderCards, 60000);
+
+// ─────────────────────────────────────────────
+// PWA ICON + MANIFEST (generated at runtime)
+// ─────────────────────────────────────────────
+(function setupPWA() {
+  // Draw icon on canvas: gradient bg + brain emoji
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+
+  // Rounded rect background
+  const r = size * 0.22;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#6366f1');
+  grad.addColorStop(0.5, '#a855f7');
+  grad.addColorStop(1, '#ec4899');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Brain emoji centred
+  ctx.font = `${size * 0.58}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🧠', size / 2, size / 2 + size * 0.03);
+
+  const iconDataUrl = c.toDataURL('image/png');
+
+  // Apple touch icon
+  const touchIcon = document.createElement('link');
+  touchIcon.rel = 'apple-touch-icon';
+  touchIcon.href = iconDataUrl;
+  document.head.appendChild(touchIcon);
+
+  // Web app manifest (Chrome/Android PWA + browser install prompt)
+  const manifest = {
+    name: 'Brain Dump',
+    short_name: 'Brain Dump',
+    description: 'Dump your thoughts — auto-organised, prioritised, and broken into steps.',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0d0d1a',
+    theme_color: '#0d0d1a',
+    orientation: 'portrait',
+    icons: [
+      { src: iconDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const manifestUrl = URL.createObjectURL(manifestBlob);
+  const manifestLink = document.createElement('link');
+  manifestLink.rel = 'manifest';
+  manifestLink.href = manifestUrl;
+  document.head.appendChild(manifestLink);
+})();
+</script>
+</body>
+</html>
